@@ -1,5 +1,6 @@
 import { CONFIG_FILES } from 'next/dist/shared/lib/constants';
-import { useMemo } from 'react';
+import { useMemo, useEffect, useState } from 'react';
+import axios from 'axios';
 import { useTable, useGlobalFilter, usePagination } from 'react-table';
 import { COLUMNS } from './columns';
 import GlobalFilter from './GlobalFilter';
@@ -10,13 +11,16 @@ const FilteringTable = ({ searchable, pagination, data1, columns1 }) => {
     // const columns = useMemo(() => COLUMNS, []);
     // const data = useMemo(() => MOCK_DATA, [])
 
-    const columns = useMemo(() => columns1, []);
-    const data = useMemo(() => data1, []);
+    const [counter,setCounter] = useState(1);
 
+
+    const columns = useMemo(() => columns1, []);
+    // const data = useMemo(() => data1, []);
+    const [data, setData] = useState(data1);
     const tableInstance = useTable({
         columns,
         data,
-        initialState: { pageIndex: 0 },
+        initialState: { pageIndex: 0, pageSize: 10 },
     }, useGlobalFilter, usePagination)
 
     const {
@@ -40,7 +44,11 @@ const FilteringTable = ({ searchable, pagination, data1, columns1 }) => {
         state: { pageIndex, pageSize },
     } = tableInstance;
 
-    console.log(searchable);
+    // useEffect(() => {
+    //     onFetchData({ pageIndex, pageSize })
+    // }, [pageIndex, pageSize]);
+
+    // console.log(searchable);
     // console.log(getTableProps());
     // console.log(getTableBodyProps());
     // console.log(headerGroups);
@@ -48,6 +56,23 @@ const FilteringTable = ({ searchable, pagination, data1, columns1 }) => {
     // console.log(headerGroups[0].headers[0].getHeaderProps());
     // console.log(headerGroups[0].headers[0].render('HEADER'));
     const { globalFilter } = state;
+
+
+
+    function fetchNext(i, s) {
+        axios
+            .get(`http://localhost:3004/employees?_page=${counter + 1}&_limit=${s}`)
+            .then((res) => {
+                console.log(res.data);
+                setCounter(counter+1);
+                setData(res.data);
+            })
+            .catch(err => console.log(err))
+
+        console.log("index of current page : " + i);
+        console.log("Number of rows : " + s);
+
+    }
     return (
         <>
             {/* For searching */}
@@ -70,7 +95,10 @@ const FilteringTable = ({ searchable, pagination, data1, columns1 }) => {
                         <button onClick={() => previousPage()} disabled={!canPreviousPage}>
                             {'<'}
                         </button>{' '}
-                        <button onClick={() => nextPage()} disabled={!canNextPage}>
+                        {/* <button onClick={() => nextPage()} disabled={!canNextPage}> */}
+                        <button onClick={() => { fetchNext(pageIndex, pageSize); nextPage() }}
+                        // disabled={!canNextPage}
+                        > 
                             {'>'}
                         </button>{' '}
                         <button onClick={() => gotoPage(pageCount - 1)} disabled={!canNextPage}>
